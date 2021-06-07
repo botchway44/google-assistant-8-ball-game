@@ -1,7 +1,13 @@
 import { conversation, ConversationV3, Image, Simple, Suggestion } from '@assistant/conversation';
 import { Session } from '@assistant/conversation/dist/conversation/handler';
+import { ITask } from '../dto';
 import { CreateNewTask } from './tasks.utils';
 import { decodeUser } from './user.utils';
+
+export const ASSISTANT_LOGO_IMAGE = new Image({
+    url: 'https://developers.google.com/assistant/assistant_96.png',
+    alt: 'Google Assistant logo'
+});
 
 export function handleAddTasks(conv: ConversationV3) {
     const authHeader = conv.headers.authorization?.toString() || "";
@@ -37,7 +43,7 @@ export function handleAddTasks(conv: ConversationV3) {
         const new_task = CreateNewTask(name, description, due, user.email)
 
         // insert into mongo
-        
+
         // send prompt message 
         conv.add(
             new Simple(`Okay ${user.family_name}, your task is created`)
@@ -62,4 +68,50 @@ export function handleAddTasks(conv: ConversationV3) {
 
 export function handleAllTasks(conv: ConversationV3) {
 
+}
+
+export class Display {
+    constructor(task: ITask) {
+        this.title = task.name;
+        this.description = task.description || '';
+
+    }
+
+    title: string;
+    description: string;
+    image = ASSISTANT_LOGO_IMAGE;
+}
+
+export class Entry {
+
+    constructor(task: ITask) {
+        this.name = task.id;
+
+        this.synonyms.push(task.name);
+        this.display = new Display(task);
+    }
+    public name: string;
+    synonyms: string[] = []
+    display: Display;
+
+}
+export function buildEntriesList(tasks: ITask[]) {
+
+    const entries = [];
+    for (const task of tasks) {
+        const entry = new Entry(task);
+        entries.push(entry);
+    }
+
+    return entries
+}
+
+export function buildItemsList(tasks: ITask[]) {
+    const items = [];
+    for (const task of tasks) {
+        const entry = { key: task.id };
+        items.push(entry);
+    }
+
+    return items
 }

@@ -1,7 +1,8 @@
 // Import the appropriate service and chosen wrappers
-import { conversation, Image, List, Simple, Suggestion } from '@assistant/conversation';
+import { Card, Collection, conversation, Image, List, Media, Simple, Suggestion, Table } from '@assistant/conversation';
+import { MediaType, Mode, OptionalMediaControl } from '@assistant/conversation/dist/api/schema';
 import { AuthHeaderProcessor } from '@assistant/conversation/dist/auth';
-import { decodeUser, handleAddTasks, MongoClientConnection } from './utils';
+import { ASSISTANT_LOGO_IMAGE, buildEntriesList, buildItemsList, decodeUser, handleAddTasks, MongoClientConnection } from './utils';
 import { CreateNewTask } from './utils';
 
 const express = require('express');
@@ -20,113 +21,262 @@ let mongoClient: MongoClientConnection;
 // Register handlers for Actions SDK
 const expressApp = express().use(bodyParser.json());
 
-// Place scenename here
-app.handle('start_scene_initial_prompt', (conv) => {
-    console.log('Start scene: initial prompt');
-    conv.overwrite = false;
-    // conv.scene.next = { name: 'actions.scene.END_CONVERSATION' };
-    conv.add('Hello world from fulfillment handler');
-
+// Simple
+app.handle('simple', (conv) => {
+    conv.add(new Simple({
+        speech: 'This is the first simple response.',
+        text: 'This is the 1st simple response.',
+    }));
+    conv.add(new Simple({
+        speech: 'This is the last simple response.',
+        text: 'This is the last simple response.',
+    }));
 });
 
-// use intent handler name here
-app.handle('all_tasks_scene', async (conv) => {
+// Image
+app.handle('image', (conv) => {
+    conv.add('This is an image prompt!');
+    conv.add(ASSISTANT_LOGO_IMAGE);
+});
 
-    console.log("all tasks scene, called")
-    const authHeader = conv.headers.authorization?.toString() || "";
+// Card
+app.handle('card', (conv) => {
+    conv.add('This is a card.');
+    conv.add(new Card({
+        'title': 'Card Title',
+        'subtitle': 'Card Subtitle',
+        'text': 'Card Content',
+        'image': ASSISTANT_LOGO_IMAGE,
+    }));
+});
 
-    const user = decodeUser(authHeader);
+// Table
+app.handle('table', (conv) => {
+    conv.add('This is a table.');
+    conv.add(new Table({
+        'title': 'Table Title',
+        'subtitle': 'Table Subtitle',
+        'image': ASSISTANT_LOGO_IMAGE,
+        'columns': [{
+            'header': 'Column A',
+        }, {
+            'header': 'Column B',
+        }, {
+            'header': 'Column C',
+        }],
+        'rows': [{
+            'cells': [{
+                'text': 'A1',
+            }, {
+                'text': 'B1',
+            }, {
+                'text': 'C1',
+            }],
+        }, {
+            'cells': [{
+                'text': 'A2',
+            }, {
+                'text': 'B2',
+            }, {
+                'text': 'C2',
+            }],
+        }, {
+            'cells': [{
+                'text': 'A3',
+            }, {
+                'text': 'B3',
+            }, {
+                'text': 'C3',
+            }],
+        }],
+    }));
+});
 
-    // get all tasks and create a list
-    const tasks = await mongoClient.getAllTasks((user?.email || ""));
-
-    // if (tasks.length > 0) {
-
-    //     // Create a list of tasks
-    //     conv.add(new List())
-    // }
-
-    conv.add("Here is a list")
-
-    conv.add(new List({
-        title: 'Here is a list of items',
-        subtitle: 'Below are the items list',
+// Collection
+app.handle('collection', (conv) => {
+    conv.add('This is a collection.');
+    // Override prompt_option Type with display
+    // information for Collection items.
+    conv.session.typeOverrides = [{
+        name: 'prompt_option',
+        mode: Mode.TypeReplace,
+        synonym: {
+            entries: [
+                {
+                    name: 'ITEM_1',
+                    synonyms: ['Item 1', 'First item'],
+                    display: {
+                        title: 'Item #1',
+                        description: 'Description of Item #1',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+                {
+                    name: 'ITEM_2',
+                    synonyms: ['Item 2', 'Second item'],
+                    display: {
+                        title: 'Item #2',
+                        description: 'Description of Item #2',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+                {
+                    name: 'ITEM_3',
+                    synonyms: ['Item 3', 'Third item'],
+                    display: {
+                        title: 'Item #3',
+                        description: 'Description of Item #3',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+                {
+                    name: 'ITEM_4',
+                    synonyms: ['Item 4', 'Fourth item'],
+                    display: {
+                        title: 'Item #4',
+                        description: 'Description of Item #4',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+            ],
+        },
+    }];
+    conv.add(new Collection({
+        title: 'Collection Title',
+        subtitle: 'Collection subtitle',
         items: [
             {
-                key: 'List item 1'
+                key: 'ITEM_1',
             },
             {
-                key: 'List item 2'
+                key: 'ITEM_2',
             },
             {
-                key: 'list item 3'
+                key: 'ITEM_3',
             },
             {
-                key: 'list item 4'
-            }
+                key: 'ITEM_4',
+            },
         ],
     }));
 });
 
-
-// use intent handler name here
-app.handle('AddTaskIntent', async (conv) => {
-    const authHeader = conv.headers.authorization?.toString() || "";
-    // const user = conv.user.processAuthHeader(authHeader, new AuthHeaderProcessor())
-
-    // destruct task details
-    const name = conv.session.params?.name;
-    const description = conv.session.params?.description;
-    const due = conv.session.params?.due;
-
-    // If there is no name, call the same scene and ask for the name again
-    // if (!name) {
-
-    // }
-    // conv.overwrite = true;
-    // const session = conv.session.params || {};
-    // session.name = null;
-    // conv.session.params = session;
-    const user = decodeUser(authHeader);
-
-    if (!user) {
-        conv.add(
-            new Simple('In order for me to process your task, i need to link your account to google, Should i proceed?')
-        );
-
-
-        conv.add(new Suggestion({ title: 'Yes' }))
-        conv.add(new Suggestion({ title: 'No' }))
-
-    } else {
-        // create task with user email
-        const new_task = CreateNewTask(name, description, due, user.email)
-
-        // insert into mongo
-        await mongoClient.addTask(new_task).then(() => {
-            conv.add(
-                new Simple(`Okay ${user.family_name}, your task is created`)
-            );
-        });
-        // send prompt message 
-
-        // conv.scene.next = { name: 'AddTasks' };
-    }
-    // console.log(JSON.stringify(user))
-
-
-    // conv.add(
-    //     new Simple('Task create succesfully, i will send you email updates when the task is almost due')
-    // );
-
-    // conv.add(new Image({
-    //     url: 'https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/imgs/160204193356-01-cat-500.jpg',
-    //     alt: 'A cat',
-    // }));
-
-    // console.log(JSON.stringify(conv));
-
+// List
+app.handle('list', (conv) => {
+    conv.add('This is a list.');
+    // Override prompt_option Type with display
+    // information for List items.
+    conv.session.typeOverrides = [{
+        name: 'prompt_option',
+        mode: Mode.TypeReplace,
+        synonym: {
+            entries: [
+                {
+                    name: 'ITEM_1',
+                    synonyms: ['Item 1', 'First item'],
+                    display: {
+                        title: 'Item #1',
+                        description: 'Description of Item #1',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+                {
+                    name: 'ITEM_2',
+                    synonyms: ['Item 2', 'Second item'],
+                    display: {
+                        title: 'Item #2',
+                        description: 'Description of Item #2',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+                {
+                    name: 'ITEM_3',
+                    synonyms: ['Item 3', 'Third item'],
+                    display: {
+                        title: 'Item #3',
+                        description: 'Description of Item #3',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+                {
+                    name: 'ITEM_4',
+                    synonyms: ['Item 4', 'Fourth item'],
+                    display: {
+                        title: 'Item #4',
+                        description: 'Description of Item #4',
+                        image: ASSISTANT_LOGO_IMAGE,
+                    },
+                },
+            ],
+        },
+    }];
+    conv.add(new List({
+        title: 'List title',
+        subtitle: 'List subtitle',
+        items: [
+            {
+                key: 'ITEM_1',
+            },
+            {
+                key: 'ITEM_2',
+            },
+            {
+                key: 'ITEM_3',
+            },
+            {
+                key: 'ITEM_4',
+            },
+        ],
+    }));
 });
+
+// Option
+app.handle('option', (conv) => {
+    const selectedOption = conv.session.params?.prompt_option
+        .toLowerCase()
+        .replace(/_/g, ' #');
+    conv.add(`You selected ${selectedOption}.`);
+});
+
+// Media
+app.handle('media', (conv) => {
+    conv.add('This is a media response');
+    conv.add(new Media({
+        mediaObjects: [
+            {
+                name: 'Media name',
+                description: 'Media description',
+                url: 'https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg',
+                image: {
+                    large: ASSISTANT_LOGO_IMAGE,
+                }
+            }
+        ],
+        mediaType: MediaType.Audio,
+        optionalMediaControls: [OptionalMediaControl.Paused, OptionalMediaControl.Stopped]
+    }));
+});
+
+// Media Status
+app.handle('media_status', (conv) => {
+    const mediaStatus = conv.intent.params?.MEDIA_STATUS.resolved;
+    switch (mediaStatus) {
+        case 'FINISHED':
+            conv.add('Media has finished playing.');
+            break;
+        case 'FAILED':
+            conv.add('Media has failed.');
+            break;
+        case 'PAUSED' || 'STOPPED':
+            conv.add(new Media({
+                mediaType: MediaType.MediaStatusACK
+            }));
+            break;
+        default:
+            conv.add('Unknown media status received.');
+    }
+});
+
 
 
 // Add a get Response for the assistant
