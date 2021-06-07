@@ -9,6 +9,48 @@ export const ASSISTANT_LOGO_IMAGE = new Image({
     alt: 'Google Assistant logo'
 });
 
+
+export const RESPONSES = [
+    "As I see it, yes",
+
+    "Ask again later",
+
+    "Better not to tell you now",
+
+    "Cannot predict now",
+
+    "Concentrate and ask again",
+
+    "Don't count on it",
+
+    "It is certain",
+
+    "It is decidedly so",
+
+    "Most likely",
+
+    "My reply is no",
+
+    "My sources say no",
+
+    "Outlook not so good",
+
+    "Outlook good",
+
+    "Reply hazy, try again",
+
+    "Signs point to yes",
+
+    "Very doubtful",
+
+    "Without a doubt",
+
+    "Yes",
+
+    "Yes - definitely",
+
+    "You may rely on it",
+];
 export function handleAddTasks(conv: ConversationV3) {
     const authHeader = conv.headers.authorization?.toString() || "";
     // const user = conv.user.processAuthHeader(authHeader, new AuthHeaderProcessor())

@@ -2,7 +2,7 @@
 import { Card, Collection, conversation, Image, List, Media, Simple, Suggestion, Table } from '@assistant/conversation';
 import { MediaType, Mode, OptionalMediaControl } from '@assistant/conversation/dist/api/schema';
 import { AuthHeaderProcessor } from '@assistant/conversation/dist/auth';
-import { ASSISTANT_LOGO_IMAGE, buildEntriesList, buildItemsList, decodeUser, handleAddTasks, MongoClientConnection } from './utils';
+import { ASSISTANT_LOGO_IMAGE, buildEntriesList, buildItemsList, decodeUser, handleAddTasks, MongoClientConnection, RESPONSES } from './utils';
 import { CreateNewTask } from './utils';
 
 const express = require('express');
@@ -31,6 +31,17 @@ app.handle('simple', (conv) => {
         speech: 'This is the last simple response.',
         text: 'This is the last simple response.',
     }));
+});
+
+app.handle('answer_question', (conv) => {
+
+    const response = RESPONSES[Math.floor(Math.random() * RESPONSES.length) % RESPONSES.length];
+
+    conv.add(new Simple({
+        speech: response,
+        text: response,
+    }));
+
 });
 
 // Image
@@ -290,7 +301,7 @@ expressApp.post('/fulfillment', app);
 
 
 // Starting the App
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 expressApp.listen(PORT, () => {
     mongoClient = new MongoClientConnection();
